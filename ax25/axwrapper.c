@@ -45,7 +45,7 @@
 #define FLUSHTIMEOUT	500000		/* 0.5 sec */
 
 #define	PERROR(s)	fprintf(stderr, "*** %s: %s\r", (s), strerror(errno))
-#define	USAGE()		fputs("Usage: axwrapper [-p <paclen>] <filename> <argv[0]> ...\r", stderr)
+#define	USAGE()		fputs("Usage: axwrapper [-p <paclen>] -- <command> <command args>...\r", stderr)
 
 static void convert_cr_lf(unsigned char *buf, int len)
 {
@@ -70,28 +70,29 @@ int main(int argc, char **argv)
 	int pipe_in[2];
 	int pipe_out[2];
 	int pipe_err[2];
-	int len;
+        int o;
+        int len;
 	int pid;
 	int paclen = 256;
 	fd_set fdset;
 	struct timeval tv;
 
-	while ((len = getopt(argc, argv, "p:")) != -1) {
-		switch (len) {
+	while ((o = getopt(argc, argv, "p:")) != -1) {
+		switch (o) {
 		case 'p':
 			paclen = atoi(optarg);
 			break;
-		case ':':
 		case '?':
 			USAGE();
 			exit(1);
 		}
 	}
 
-	if (argc - optind < 2) {
-		USAGE();
-		exit(1);
-	}
+        /* Run the command after "--" */
+        if (optind >= argc) {
+            fprintf(stderr, "No command specified after --\n");
+            return 1;
+        }
 
 	stdoutbuf = malloc(paclen);
 	if (stdoutbuf == NULL) {
@@ -135,7 +136,7 @@ int main(int argc, char **argv)
 		dup2(pipe_err[1], STDERR_FILENO);
 		close(pipe_err[0]);
 
-		execve(argv[optind], argv + optind + 1, NULL);
+                execve(argv[optind], argv + optind, NULL);
 
 		/* execve() should not return */
 		perror("axwrapper: execve");
