@@ -42,7 +42,7 @@ static char *portname;
 static char *inetaddr;
 static int allow_broadcast;
 static int i_am_unix98_pty_master;		/* unix98 ptmx support */
-static int foreground = 0;
+static int no_daemon = 0;
 
 static char *kiss_basename(char *s)
 {
@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 			allow_broadcast = 1;
 			break;
                 case 'f':
-                        foreground = 1;
+                        no_daemon = 1;
                         break;
 		case 'i':
 			fprintf(stderr, "%s: -i flag depreciated, use new command line format instead.\n", progname);
@@ -383,7 +383,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Become a daemon if we can.
 	 */
-        if (!foreground) {
+        if (!no_daemon) {
           if (!daemon_start(FALSE)) {
                   fprintf(stderr, "%s: cannot become a daemon\n", progname);
                   return 1;
@@ -396,15 +396,14 @@ int main(int argc, char *argv[])
 
 	fflush(stdout);
 	fflush(stderr);
-        if (!foreground) {
+        if (!no_daemon) {
           close(0);
           close(1);
           close(2);
+
+          while (1)
+            sleep(10000);
         }
 
-	while (1)
-		sleep(10000);
-
-	/* NOT REACHED */
 	return 0;
 }
