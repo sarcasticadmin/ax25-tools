@@ -42,6 +42,7 @@ static char *portname;
 static char *inetaddr;
 static int allow_broadcast;
 static int i_am_unix98_pty_master;		/* unix98 ptmx support */
+static int foreground = 0;
 
 static char *kiss_basename(char *s)
 {
@@ -222,7 +223,7 @@ static int startiface(char *dev, struct hostent *hp)
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: %s [-b] [-l] [-m mtu] [-v] tty port [inetaddr]\n", progname);
+	fprintf(stderr, "usage: %s [-b] [-l] [-f] [-m mtu] [-v] tty port [inetaddr]\n", progname);
 }
 
 int main(int argc, char *argv[])
@@ -240,7 +241,7 @@ int main(int argc, char *argv[])
 	if (!strcmp(progname, "spattach"))
 		disc = N_6PACK;
 
-	while ((fd = getopt(argc, argv, "b6i:lm:v")) != -1) {
+	while ((fd = getopt(argc, argv, "b6i:lm:vf")) != -1) {
 		switch (fd) {
 		case '6':
 			disc = N_6PACK;
@@ -248,6 +249,9 @@ int main(int argc, char *argv[])
 		case 'b':
 			allow_broadcast = 1;
 			break;
+                case 'f':
+                        foreground = 1;
+                        break;
 		case 'i':
 			fprintf(stderr, "%s: -i flag depreciated, use new command line format instead.\n", progname);
 			inetaddr = optarg;
@@ -379,10 +383,12 @@ int main(int argc, char *argv[])
 	/*
 	 * Become a daemon if we can.
 	 */
-	if (!daemon_start(FALSE)) {
-		fprintf(stderr, "%s: cannot become a daemon\n", progname);
-		return 1;
-	}
+        if (!foreground) {
+          if (!daemon_start(FALSE)) {
+                  fprintf(stderr, "%s: cannot become a daemon\n", progname);
+                  return 1;
+          }
+        }
 	if (!i_am_unix98_pty_master) {
 		if (!tty_lock(kttyname))
 			return 1;
@@ -390,9 +396,11 @@ int main(int argc, char *argv[])
 
 	fflush(stdout);
 	fflush(stderr);
-	close(0);
-	close(1);
-	close(2);
+        if (!foreground) {
+          close(0);
+          close(1);
+          close(2);
+        }
 
 	while (1)
 		sleep(10000);
