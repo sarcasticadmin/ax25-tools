@@ -43,6 +43,7 @@ static char *inetaddr;
 static int allow_broadcast;
 static int i_am_unix98_pty_master;		/* unix98 ptmx support */
 static int no_daemon = 0;
+static int call_cleanup = 0;
 
 static char *kiss_basename(char *s)
 {
@@ -223,7 +224,7 @@ static int startiface(char *dev, struct hostent *hp)
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: %s [-b] [-l] [-n] [-m mtu] [-v] tty port [inetaddr]\n", progname);
+	fprintf(stderr, "usage: %s [-b] [-l] [-n] [-x] [-m mtu] [-v] tty port [inetaddr]\n", progname);
 }
 
 int main(int argc, char *argv[])
@@ -241,7 +242,7 @@ int main(int argc, char *argv[])
 	if (!strcmp(progname, "spattach"))
 		disc = N_6PACK;
 
-	while ((fd = getopt(argc, argv, "b6i:lm:vf")) != -1) {
+	while ((fd = getopt(argc, argv, "b6i:lm:vnx")) != -1) {
 		switch (fd) {
 		case '6':
 			disc = N_6PACK;
@@ -249,6 +250,9 @@ int main(int argc, char *argv[])
 		case 'b':
 			allow_broadcast = 1;
 			break;
+                case 'x':
+                        call_cleanup = 1;
+                        break;
                 case 'n':
                         no_daemon = 1;
                         break;
@@ -308,6 +312,11 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "%s: invalid internet name/address - %s\n", progname, inetaddr);
 		return 1;
 	}
+
+        // dont go any further if cleaning up
+        if (call_cleanup) {
+          terminate(SIGTERM);
+        }
 
 	fd = open(kttyname, O_RDONLY | O_NONBLOCK);
 	if (fd == -1) {
@@ -396,6 +405,7 @@ int main(int argc, char *argv[])
 
 	fflush(stdout);
 	fflush(stderr);
+
         if (!no_daemon) {
           close(0);
           close(1);
