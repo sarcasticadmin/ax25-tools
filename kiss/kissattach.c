@@ -223,7 +223,7 @@ static int startiface(char *dev, struct hostent *hp)
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: %s [-b] [-l] [-f] [-m mtu] [-v] tty port [inetaddr]\n", progname);
+	fprintf(stderr, "usage: %s [-b] [-l] [-n] [-m mtu] [-v] tty port [inetaddr]\n", progname);
 }
 
 int main(int argc, char *argv[])
@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 		case 'b':
 			allow_broadcast = 1;
 			break;
-                case 'f':
+                case 'n':
                         no_daemon = 1;
                         break;
 		case 'i':
